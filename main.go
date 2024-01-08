@@ -2,10 +2,10 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/Bignya1234/blogs/internal/database"
 	"github.com/go-chi/chi"
@@ -39,6 +39,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Can not connect to databases", err)
 	}
+	dbQueries := database.New(conn)
 
 	apiCfg := apiConfig{
 		DB: database.New(conn),
@@ -74,11 +75,10 @@ func main() {
 		Addr:    ":" + portString,
 	}
 
-	log.Printf("Server starting on port %v", portString)
-	err = srv.ListenAndServe()
-	if err != nil {
-		log.Fatal(err)
-	}
+	const collectionConcurrency = 10
+	const collectionInterval = time.Minute
+	go startScraping(dbQueries, collectionConcurrency, collectionInterval)
 
-	fmt.Println("Port:", portString)
+	log.Printf("Server starting on port %v", portString)
+	log.Fatal(srv.ListenAndServe())
 }
